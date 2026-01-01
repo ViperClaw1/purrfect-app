@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Send, Cat } from 'lucide-react';
+import { Send, Cat, Sparkles } from 'lucide-react';
 
 export default function Create() {
   const { user } = useAuth();
@@ -17,6 +17,37 @@ export default function Create() {
   const [caption, setCaption] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEnhancing, setIsEnhancing] = useState(false);
+
+  const handleEnhance = async () => {
+    if (!caption.trim()) {
+      toast({ title: 'Nothing to enhance', description: 'Write something first!', variant: 'destructive' });
+      return;
+    }
+
+    setIsEnhancing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('enhance-caption', {
+        body: { caption: caption.trim() }
+      });
+
+      if (error) throw error;
+      
+      if (data?.enhanced) {
+        setCaption(data.enhanced);
+        toast({ title: 'Enhanced! ✨', description: 'Your caption has been enhanced!' });
+      }
+    } catch (error: any) {
+      console.error('Enhance error:', error);
+      toast({ 
+        title: 'Enhancement failed', 
+        description: error.message || 'Could not enhance caption', 
+        variant: 'destructive' 
+      });
+    } finally {
+      setIsEnhancing(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,7 +109,24 @@ export default function Create() {
 
             {/* Caption */}
             <div className="space-y-2">
-              <Label htmlFor="caption" className="text-sm font-semibold">Caption</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="caption" className="text-sm font-semibold">Caption</Label>
+                <Button
+                  type="button"
+                  variant="soft"
+                  size="sm"
+                  onClick={handleEnhance}
+                  disabled={isEnhancing || !caption.trim()}
+                  className="gap-1.5"
+                >
+                  {isEnhancing ? (
+                    <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                  ) : (
+                    <Sparkles className="w-4 h-4" />
+                  )}
+                  Enhance
+                </Button>
+              </div>
               <Textarea
                 id="caption"
                 placeholder="What's your cat up to? 🐱"

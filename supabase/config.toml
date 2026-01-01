@@ -1,1 +1,4 @@
 project_id = "tgstnxcmgxidvusveinn"
+
+[functions.enhance-caption]
+verify_jwt = false

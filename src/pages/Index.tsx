@@ -1,14 +1,125 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import Layout from '@/components/Layout';
+import PostCard from '@/components/PostCard';
+import { supabase } from '@/integrations/supabase/client';
+import { Loader2, Cat, Sparkles } from 'lucide-react';
 
-const Index = () => {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+interface Post {
+  id: string;
+  image_url: string | null;
+  caption: string | null;
+  created_at: string;
+  user_id: string;
+  profiles: {
+    display_name: string | null;
+    username: string | null;
+    avatar_url: string | null;
+  } | null;
+  likes: { user_id: string }[];
+  comments: { id: string }[];
+}
+
+export default function Index() {
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/auth');
+    }
+  }, [user, authLoading, navigate]);
+
+  useEffect(() => {
+    if (user) {
+      fetchPosts();
+    }
+  }, [user]);
+
+  const fetchPosts = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('posts')
+      .select(`
+        *,
+        profiles!posts_user_id_fkey (display_name, username, avatar_url),
+        likes (user_id),
+        comments (id)
+      `)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (!error && data) {
+      setPosts(data as Post[]);
+    }
+    setLoading(false);
+  };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-coral animate-spin" />
       </div>
-    </div>
-  );
-};
+    );
+  }
 
-export default Index;
+  if (!user) {
+    return null;
+  }
+
+  return (
+    <Layout>
+      <div className="space-y-6">
+        {/* Welcome Banner */}
+        <div className="rounded-2xl gradient-coral p-6 shadow-button">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-full bg-primary-foreground/20 flex items-center justify-center animate-float">
+              <Cat className="w-8 h-8 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-xl font-display font-bold text-primary-foreground mb-1">
+                Welcome to Purrfect! 🐾
+              </h1>
+              <p className="text-primary-foreground/80 text-sm">
+                Share your adorable cat moments with the world
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Posts Feed */}
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="w-8 h-8 text-coral animate-spin" />
+          </div>
+        ) : posts.length === 0 ? (
+          <div className="text-center py-16">
+            <div className="w-20 h-20 rounded-full bg-peach mx-auto flex items-center justify-center mb-4">
+              <Sparkles className="w-10 h-10 text-coral" />
+            </div>
+            <h2 className="text-xl font-display font-bold mb-2">No posts yet!</h2>
+            <p className="text-muted-foreground max-w-xs mx-auto">
+              Be the first to share your cat's adorable moments. Tap the + button to create a post!
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {posts.map((post) => (
+              <PostCard 
+                key={post.id} 
+                post={{
+                  ...post,
+                  profiles: post.profiles ?? undefined
+                }} 
+                onLikeChange={fetchPosts} 
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </Layout>
+  );
+}

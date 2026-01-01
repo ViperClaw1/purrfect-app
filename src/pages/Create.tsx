@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import Layout from '@/components/Layout';
+import ImageUploader from '@/components/ImageUploader';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Image, Send, X, Cat, Link as LinkIcon } from 'lucide-react';
+import { Send, Cat } from 'lucide-react';
 
 export default function Create() {
   const { user } = useAuth();
@@ -27,7 +27,7 @@ export default function Create() {
     }
 
     if (!caption.trim() && !imageUrl.trim()) {
-      toast({ title: 'Empty post', description: 'Add a caption or image URL', variant: 'destructive' });
+      toast({ title: 'Empty post', description: 'Add a caption or photo', variant: 'destructive' });
       return;
     }
 
@@ -66,40 +66,13 @@ export default function Create() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Image URL Preview */}
-            {imageUrl && (
-              <div className="relative rounded-xl overflow-hidden bg-secondary aspect-square">
-                <img 
-                  src={imageUrl} 
-                  alt="Preview" 
-                  className="w-full h-full object-cover"
-                  onError={() => setImageUrl('')}
-                />
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="icon-sm"
-                  className="absolute top-2 right-2"
-                  onClick={() => setImageUrl('')}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-            )}
-
-            {/* Image URL Input */}
+            {/* Image Upload */}
             <div className="space-y-2">
-              <Label htmlFor="imageUrl" className="text-sm font-semibold flex items-center gap-2">
-                <LinkIcon className="w-4 h-4" />
-                Image URL (optional)
-              </Label>
-              <Input
-                id="imageUrl"
-                type="url"
-                placeholder="https://example.com/cute-cat.jpg"
+              <Label className="text-sm font-semibold">Photo</Label>
+              <ImageUploader
                 value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                className="h-12 rounded-xl bg-secondary/50"
+                onChange={setImageUrl}
+                placeholder="Upload your cat photo"
               />
             </div>
 

@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import Layout from '@/components/Layout';
+import ImageUploader from '@/components/ImageUploader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { User, Edit2, Grid, Bookmark, Settings, Loader2, Save } from 'lucide-react';
+import { User, Edit2, Grid, Bookmark, Loader2, Save } from 'lucide-react';
 
 interface Profile {
   id: string;
@@ -122,13 +123,24 @@ export default function Profile() {
         <div className="bg-card rounded-2xl shadow-card border border-border p-6">
           <div className="flex items-start gap-5">
             {/* Avatar */}
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-coral to-accent flex items-center justify-center overflow-hidden shrink-0">
-              {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
-              ) : (
-                <User className="w-10 h-10 text-primary-foreground" />
-              )}
-            </div>
+            {isEditing ? (
+              <div className="w-20 shrink-0">
+                <ImageUploader
+                  value={editForm.avatar_url}
+                  onChange={(url) => setEditForm(f => ({ ...f, avatar_url: url }))}
+                  placeholder="Avatar"
+                  className="w-20"
+                />
+              </div>
+            ) : (
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-coral to-accent flex items-center justify-center overflow-hidden shrink-0">
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-10 h-10 text-primary-foreground" />
+                )}
+              </div>
+            )}
 
             {/* Info */}
             <div className="flex-1 min-w-0">
@@ -165,15 +177,6 @@ export default function Profile() {
                       onChange={(e) => setEditForm(f => ({ ...f, display_name: e.target.value }))}
                       className="h-10 mt-1"
                       placeholder="Your name"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Avatar URL</Label>
-                    <Input
-                      value={editForm.avatar_url}
-                      onChange={(e) => setEditForm(f => ({ ...f, avatar_url: e.target.value }))}
-                      className="h-10 mt-1"
-                      placeholder="https://example.com/avatar.jpg"
                     />
                   </div>
                   <div>

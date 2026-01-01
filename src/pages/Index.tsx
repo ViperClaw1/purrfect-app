@@ -41,20 +41,40 @@ export default function Index() {
 
   const fetchPosts = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    
+    // Fetch posts first
+    const { data: postsData, error: postsError } = await supabase
       .from('posts')
-      .select(`
-        *,
-        profiles!posts_user_id_fkey (display_name, username, avatar_url),
-        likes (user_id),
-        comments (id)
-      `)
+      .select('*, likes(user_id), comments(id)')
       .order('created_at', { ascending: false })
       .limit(50);
 
-    if (!error && data) {
-      setPosts(data as Post[]);
+    if (postsError || !postsData) {
+      setLoading(false);
+      return;
     }
+
+    // Get unique user IDs
+    const userIds = [...new Set(postsData.map(p => p.user_id))];
+    
+    // Fetch profiles for those users
+    const { data: profilesData } = await supabase
+      .from('profiles')
+      .select('user_id, display_name, username, avatar_url')
+      .in('user_id', userIds);
+
+    // Create a map of profiles by user_id
+    const profilesMap = new Map(
+      profilesData?.map(p => [p.user_id, p]) || []
+    );
+
+    // Combine posts with profiles
+    const enrichedPosts = postsData.map(post => ({
+      ...post,
+      profiles: profilesMap.get(post.user_id) || null,
+    }));
+
+    setPosts(enrichedPosts);
     setLoading(false);
   };
 

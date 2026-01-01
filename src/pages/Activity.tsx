@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import Layout from '@/components/Layout';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, Heart, MessageCircle, UserPlus, Bell } from 'lucide-react';
+import { Loader2, Heart, MessageCircle, Bell } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface Activity {
@@ -33,18 +33,25 @@ export default function Activity() {
     
     setLoading(true);
 
+    // Get user's posts first
+    const { data: userPosts } = await supabase
+      .from('posts')
+      .select('id')
+      .eq('user_id', user.id);
+
+    if (!userPosts || userPosts.length === 0) {
+      setActivities([]);
+      setLoading(false);
+      return;
+    }
+
+    const postIds = userPosts.map(p => p.id);
+
     // Fetch likes on user's posts
     const { data: likesData } = await supabase
       .from('likes')
-      .select(`
-        id,
-        created_at,
-        post_id,
-        user_id,
-        posts!inner (user_id),
-        profiles:user_id (display_name, username, avatar_url)
-      `)
-      .eq('posts.user_id', user.id)
+      .select('id, created_at, post_id, user_id')
+      .in('post_id', postIds)
       .neq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(20);
@@ -52,18 +59,26 @@ export default function Activity() {
     // Fetch comments on user's posts
     const { data: commentsData } = await supabase
       .from('comments')
-      .select(`
-        id,
-        created_at,
-        post_id,
-        user_id,
-        posts!inner (user_id),
-        profiles:user_id (display_name, username, avatar_url)
-      `)
-      .eq('posts.user_id', user.id)
+      .select('id, created_at, post_id, user_id')
+      .in('post_id', postIds)
       .neq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(20);
+
+    // Get unique user IDs from likes and comments
+    const actorIds = new Set<string>();
+    likesData?.forEach(l => actorIds.add(l.user_id));
+    commentsData?.forEach(c => actorIds.add(c.user_id));
+
+    // Fetch profiles for actors
+    const { data: profilesData } = await supabase
+      .from('profiles')
+      .select('user_id, display_name, username, avatar_url')
+      .in('user_id', [...actorIds]);
+
+    const profilesMap = new Map(
+      profilesData?.map(p => [p.user_id, p]) || []
+    );
 
     const combined: Activity[] = [
       ...(likesData?.map(l => ({
@@ -71,14 +86,14 @@ export default function Activity() {
         type: 'like' as const,
         created_at: l.created_at,
         post_id: l.post_id,
-        actor: l.profiles,
+        actor: profilesMap.get(l.user_id) || null,
       })) || []),
       ...(commentsData?.map(c => ({
         id: c.id,
         type: 'comment' as const,
         created_at: c.created_at,
         post_id: c.post_id,
-        actor: c.profiles,
+        actor: profilesMap.get(c.user_id) || null,
       })) || []),
     ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 

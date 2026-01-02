@@ -46,6 +46,27 @@ export type Database = {
           },
         ]
       }
+      lightning_stickers: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       likes: {
         Row: {
           created_at: string
@@ -109,6 +130,8 @@ export type Database = {
           created_at: string
           display_name: string | null
           id: string
+          is_premium: boolean
+          stripe_customer_id: string | null
           updated_at: string
           user_id: string
           username: string | null
@@ -119,6 +142,8 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          is_premium?: boolean
+          stripe_customer_id?: string | null
           updated_at?: string
           user_id: string
           username?: string | null
@@ -129,6 +154,8 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          is_premium?: boolean
+          stripe_customer_id?: string | null
           updated_at?: string
           user_id?: string
           username?: string | null

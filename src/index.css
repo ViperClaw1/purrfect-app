@@ -45,16 +45,23 @@
     --warm-gray: 30 10% 45%;
     --whisker: 35 25% 80%;
     
+    /* Premium tokens */
+    --premium: 270 60% 60%;
+    --premium-light: 270 70% 75%;
+    --premium-dark: 270 50% 45%;
+    
     /* Gradients */
     --gradient-coral: linear-gradient(135deg, hsl(15 75% 55%) 0%, hsl(25 85% 60%) 100%);
     --gradient-warm: linear-gradient(180deg, hsl(30 30% 98%) 0%, hsl(35 60% 95%) 100%);
     --gradient-card: linear-gradient(145deg, hsl(30 25% 99%) 0%, hsl(35 35% 97%) 100%);
+    --gradient-premium: linear-gradient(135deg, hsl(270 60% 60%) 0%, hsl(290 70% 65%) 50%, hsl(270 60% 60%) 100%);
     
     /* Shadows */
     --shadow-soft: 0 4px 20px -4px hsl(20 25% 15% / 0.08);
     --shadow-card: 0 2px 12px -2px hsl(20 25% 15% / 0.06);
     --shadow-hover: 0 8px 30px -8px hsl(15 75% 55% / 0.2);
     --shadow-button: 0 4px 14px -3px hsl(15 75% 55% / 0.35);
+    --shadow-premium: 0 0 20px -2px hsl(270 60% 60% / 0.4), 0 0 40px -4px hsl(290 70% 65% / 0.2);
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -103,14 +110,21 @@
     --warm-gray: 30 15% 55%;
     --whisker: 30 15% 30%;
 
+    /* Premium tokens */
+    --premium: 270 50% 55%;
+    --premium-light: 270 60% 65%;
+    --premium-dark: 270 40% 40%;
+
     --gradient-coral: linear-gradient(135deg, hsl(15 70% 50%) 0%, hsl(25 75% 55%) 100%);
     --gradient-warm: linear-gradient(180deg, hsl(20 20% 8%) 0%, hsl(20 18% 12%) 100%);
     --gradient-card: linear-gradient(145deg, hsl(20 18% 12%) 0%, hsl(20 15% 14%) 100%);
+    --gradient-premium: linear-gradient(135deg, hsl(270 50% 55%) 0%, hsl(290 60% 60%) 50%, hsl(270 50% 55%) 100%);
 
     --shadow-soft: 0 4px 20px -4px hsl(0 0% 0% / 0.4);
     --shadow-card: 0 2px 12px -2px hsl(0 0% 0% / 0.3);
     --shadow-hover: 0 8px 30px -8px hsl(15 75% 55% / 0.3);
     --shadow-button: 0 4px 14px -3px hsl(15 75% 55% / 0.4);
+    --shadow-premium: 0 0 20px -2px hsl(270 50% 55% / 0.5), 0 0 40px -4px hsl(290 60% 60% / 0.3);
 
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
@@ -152,6 +166,10 @@
     background: var(--gradient-card);
   }
   
+  .gradient-premium {
+    background: var(--gradient-premium);
+  }
+  
   .shadow-soft {
     box-shadow: var(--shadow-soft);
   }
@@ -166,6 +184,10 @@
   
   .shadow-button {
     box-shadow: var(--shadow-button);
+  }
+  
+  .shadow-premium {
+    box-shadow: var(--shadow-premium);
   }
 
   .text-gradient {
@@ -192,6 +214,29 @@
     0%, 100% { transform: rotate(0deg); }
     25% { transform: rotate(-5deg); }
     75% { transform: rotate(5deg); }
+  }
+
+  .animate-premium-glow {
+    animation: premium-glow 3s ease-in-out infinite;
+  }
+
+  @keyframes premium-glow {
+    0%, 100% { 
+      box-shadow: 0 0 15px -2px hsl(var(--premium) / 0.3), 0 0 30px -4px hsl(var(--premium-light) / 0.2);
+    }
+    50% { 
+      box-shadow: 0 0 25px -2px hsl(var(--premium) / 0.5), 0 0 50px -4px hsl(var(--premium-light) / 0.3);
+    }
+  }
+
+  .animate-lightning {
+    animation: lightning-flash 0.3s ease-out;
+  }
+
+  @keyframes lightning-flash {
+    0% { transform: scale(0.5); opacity: 0; }
+    50% { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
   }
 
   .paw-pattern {

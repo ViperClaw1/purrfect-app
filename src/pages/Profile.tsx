@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { usePremium } from '@/hooks/usePremium';
 import Layout from '@/components/Layout';
 import ImageUploader from '@/components/ImageUploader';
 import { Button } from '@/components/ui/button';
@@ -8,7 +10,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { User, Edit2, Grid, Bookmark, Loader2, Save } from 'lucide-react';
+import { User, Edit2, Grid, Bookmark, Loader2, Save, Crown, Zap, Settings } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface Profile {
   id: string;
@@ -17,6 +20,7 @@ interface Profile {
   display_name: string | null;
   bio: string | null;
   avatar_url: string | null;
+  is_premium: boolean;
 }
 
 interface Post {
@@ -26,7 +30,9 @@ interface Post {
 
 export default function Profile() {
   const { user } = useAuth();
+  const { isPremium, loading: premiumLoading, checkSubscription, openCheckout, openCustomerPortal } = usePremium();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,6 +43,17 @@ export default function Profile() {
     bio: '',
     avatar_url: '',
   });
+
+  // Handle subscription success/cancel from URL params
+  useEffect(() => {
+    const subscriptionStatus = searchParams.get('subscription');
+    if (subscriptionStatus === 'success') {
+      toast({ title: '🎉 Welcome to Premium!', description: 'Your subscription is now active.' });
+      checkSubscription();
+    } else if (subscriptionStatus === 'cancelled') {
+      toast({ title: 'Subscription cancelled', description: 'No changes were made to your account.' });
+    }
+  }, [searchParams, toast, checkSubscription]);
 
   useEffect(() => {
     if (user) {
@@ -55,7 +72,7 @@ export default function Profile() {
       .maybeSingle();
 
     if (data) {
-      setProfile(data);
+      setProfile(data as Profile);
       setEditForm({
         display_name: data.display_name || '',
         bio: data.bio || '',
@@ -120,7 +137,10 @@ export default function Profile() {
     <Layout>
       <div className="space-y-6 animate-fade-in">
         {/* Profile Header */}
-        <div className="bg-card rounded-2xl shadow-card border border-border p-6">
+        <div className={cn(
+          "bg-card rounded-2xl shadow-card border border-border p-6 transition-all duration-300",
+          isPremium && "animate-premium-glow border-[hsl(var(--premium))]"
+        )}>
           <div className="flex items-start gap-5">
             {/* Avatar */}
             {isEditing ? (
@@ -133,7 +153,10 @@ export default function Profile() {
                 />
               </div>
             ) : (
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-coral to-accent flex items-center justify-center overflow-hidden shrink-0">
+              <div className={cn(
+                "w-20 h-20 rounded-full bg-gradient-to-br from-coral to-accent flex items-center justify-center overflow-hidden shrink-0",
+                isPremium && "ring-4 ring-[hsl(var(--premium))] shadow-premium"
+              )}>
                 {profile?.avatar_url ? (
                   <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
                 ) : (
@@ -145,7 +168,15 @@ export default function Profile() {
             {/* Info */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-2 mb-2">
-                <h1 className="text-xl font-display font-bold truncate">{displayName}</h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-xl font-display font-bold truncate">{displayName}</h1>
+                  {isPremium && (
+                    <span className="inline-flex items-center gap-1 text-xs bg-gradient-premium text-white px-2 py-0.5 rounded-full font-medium">
+                      <Crown className="w-3 h-3" />
+                      Premium
+                    </span>
+                  )}
+                </div>
                 <Button
                   variant={isEditing ? 'coral' : 'outline'}
                   size="sm"
@@ -212,6 +243,74 @@ export default function Profile() {
               )}
             </div>
           </div>
+        </div>
+
+        {/* Premium Section */}
+        <div className={cn(
+          "rounded-2xl p-6 border",
+          isPremium 
+            ? "bg-gradient-to-br from-[hsl(var(--premium)/0.1)] to-[hsl(var(--premium-light)/0.05)] border-[hsl(var(--premium)/0.3)]" 
+            : "bg-card border-border shadow-card"
+        )}>
+          {isPremium ? (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full gradient-premium flex items-center justify-center">
+                  <Crown className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-display font-bold text-lg">Purrfect Premium</h3>
+                  <p className="text-sm text-muted-foreground">You have access to all premium features!</p>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" onClick={openCustomerPortal}>
+                <Settings className="w-4 h-4 mr-1" />
+                Manage
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center">
+                  <Crown className="w-6 h-6 text-[hsl(var(--premium))]" />
+                </div>
+                <div>
+                  <h3 className="font-display font-bold text-lg">Upgrade to Premium</h3>
+                  <p className="text-sm text-muted-foreground">$20/month • Cancel anytime</p>
+                </div>
+              </div>
+              
+              <ul className="space-y-2 text-sm">
+                <li className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-full bg-[hsl(var(--premium))] flex items-center justify-center">
+                    <Zap className="w-3 h-3 text-white" />
+                  </div>
+                  <span>Give posts <strong>Lightning Stickers</strong> ⚡</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-full bg-[hsl(var(--premium))] flex items-center justify-center">
+                    <Crown className="w-3 h-3 text-white" />
+                  </div>
+                  <span><strong>Purple premium shine</strong> on your profile ✨</span>
+                </li>
+              </ul>
+
+              <Button 
+                onClick={openCheckout} 
+                className="w-full gradient-premium text-white font-semibold"
+                disabled={premiumLoading}
+              >
+                {premiumLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <Crown className="w-4 h-4 mr-2" />
+                    Upgrade to Premium
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Posts Grid */}

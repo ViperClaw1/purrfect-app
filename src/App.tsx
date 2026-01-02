@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { PremiumProvider } from "@/hooks/usePremium";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Create from "./pages/Create";
@@ -18,19 +19,21 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/create" element={<Create />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/explore" element={<Explore />} />
-            <Route path="/activity" element={<Activity />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+        <PremiumProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/create" element={<Create />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/explore" element={<Explore />} />
+              <Route path="/activity" element={<Activity />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </PremiumProvider>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>

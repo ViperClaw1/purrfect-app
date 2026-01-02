@@ -14,24 +14,22 @@ interface PremiumContextType {
 const PremiumContext = createContext<PremiumContextType | undefined>(undefined);
 
 export function PremiumProvider({ children }: { children: ReactNode }) {
-  const { user, session } = useAuth();
+  const { user } = useAuth();
   const [isPremium, setIsPremium] = useState(false);
   const [loading, setLoading] = useState(true);
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
 
   const checkSubscription = useCallback(async () => {
-    if (!session?.access_token) {
+    // No need to manually pass a JWT here; the client attaches the current access token automatically.
+    if (!user) {
       setIsPremium(false);
+      setSubscriptionEnd(null);
       setLoading(false);
       return;
     }
 
     try {
-      const { data, error } = await supabase.functions.invoke('check-subscription', {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
+      const { data, error } = await supabase.functions.invoke('check-subscription');
 
       if (error) {
         console.error('Error checking subscription:', error);
@@ -50,17 +48,17 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [session?.access_token]);
+  }, [user?.id]);
 
   useEffect(() => {
-    // Only check subscription when we have both user and a valid session with access token
-    if (user && session?.access_token) {
+    if (user) {
       checkSubscription();
-    } else if (!user) {
+    } else {
       setIsPremium(false);
+      setSubscriptionEnd(null);
       setLoading(false);
     }
-  }, [user, session?.access_token, checkSubscription]);
+  }, [user, checkSubscription]);
 
   // Check subscription periodically (every minute)
   useEffect(() => {
@@ -71,14 +69,10 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
   }, [user, checkSubscription]);
 
   const openCheckout = async () => {
-    if (!session) return;
+    if (!user) return;
 
     try {
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
+      const { data, error } = await supabase.functions.invoke('create-checkout');
 
       if (error) throw error;
       if (data?.url) {
@@ -90,14 +84,10 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
   };
 
   const openCustomerPortal = async () => {
-    if (!session) return;
+    if (!user) return;
 
     try {
-      const { data, error } = await supabase.functions.invoke('customer-portal', {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
+      const { data, error } = await supabase.functions.invoke('customer-portal');
 
       if (error) throw error;
       if (data?.url) {

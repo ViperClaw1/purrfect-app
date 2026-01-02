@@ -21,11 +21,15 @@ serve(async (req) => {
   );
 
   try {
-    const authHeader = req.headers.get("Authorization")!;
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) throw new Error("Unauthorized: missing Authorization header");
+
     const token = authHeader.replace("Bearer ", "");
-    const { data } = await supabaseClient.auth.getUser(token);
+    const { data, error: userError } = await supabaseClient.auth.getUser(token);
+    if (userError) throw new Error(`Unauthorized: ${userError.message}`);
+
     const user = data.user;
-    if (!user?.email) throw new Error("User not authenticated or email not available");
+    if (!user?.email) throw new Error("Unauthorized: user not authenticated or email not available");
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
@@ -58,10 +62,11 @@ serve(async (req) => {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
+    const status = errorMessage.toLowerCase().includes("unauthorized") ? 401 : 500;
     console.error("[CREATE-CHECKOUT] Error:", errorMessage);
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
+      status,
     });
   }
 });

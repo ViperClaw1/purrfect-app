@@ -98,10 +98,15 @@ serve(async (req) => {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
+    const status = errorMessage.toLowerCase().includes("authorization") ||
+      errorMessage.toLowerCase().includes("authentication") ||
+      errorMessage.toLowerCase().includes("jwt")
+        ? 401
+        : 500;
     logStep("ERROR in check-subscription", { message: errorMessage });
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
+      status,
     });
   }
 });

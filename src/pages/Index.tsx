@@ -16,9 +16,11 @@ interface Post {
     display_name: string | null;
     username: string | null;
     avatar_url: string | null;
+    is_premium?: boolean;
   } | null;
   likes: { user_id: string }[];
   comments: { id: string }[];
+  lightning_stickers: { user_id: string }[];
 }
 
 export default function Index() {
@@ -54,24 +56,41 @@ export default function Index() {
       return;
     }
 
-    // Get unique user IDs
+    // Get unique user IDs and post IDs
     const userIds = [...new Set(postsData.map(p => p.user_id))];
+    const postIds = postsData.map(p => p.id);
     
     // Fetch profiles for those users
     const { data: profilesData } = await supabase
       .from('profiles')
-      .select('user_id, display_name, username, avatar_url')
+      .select('user_id, display_name, username, avatar_url, is_premium')
       .in('user_id', userIds);
+
+    // Fetch lightning stickers for posts
+    const { data: lightningData } = await supabase
+      .from('lightning_stickers')
+      .select('post_id, user_id')
+      .in('post_id', postIds);
 
     // Create a map of profiles by user_id
     const profilesMap = new Map(
       profilesData?.map(p => [p.user_id, p]) || []
     );
 
-    // Combine posts with profiles
+    // Create a map of lightning stickers by post_id
+    const lightningMap = new Map<string, { user_id: string }[]>();
+    lightningData?.forEach(l => {
+      if (!lightningMap.has(l.post_id)) {
+        lightningMap.set(l.post_id, []);
+      }
+      lightningMap.get(l.post_id)!.push({ user_id: l.user_id });
+    });
+
+    // Combine posts with profiles and lightning stickers
     const enrichedPosts = postsData.map(post => ({
       ...post,
       profiles: profilesMap.get(post.user_id) || null,
+      lightning_stickers: lightningMap.get(post.id) || [],
     }));
 
     setPosts(enrichedPosts);
@@ -132,7 +151,8 @@ export default function Index() {
                 key={post.id} 
                 post={{
                   ...post,
-                  profiles: post.profiles ?? undefined
+                  profiles: post.profiles ?? undefined,
+                  lightning_stickers: post.lightning_stickers
                 }} 
                 onLikeChange={fetchPosts} 
               />

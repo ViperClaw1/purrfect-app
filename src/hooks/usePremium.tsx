@@ -20,7 +20,7 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
 
   const checkSubscription = useCallback(async () => {
-    if (!session) {
+    if (!session?.access_token) {
       setIsPremium(false);
       setLoading(false);
       return;
@@ -35,10 +35,14 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         console.error('Error checking subscription:', error);
+        // Don't break the app on subscription check errors
+        setIsPremium(false);
+      } else if (data?.error) {
+        console.error('Subscription check returned error:', data.error);
         setIsPremium(false);
       } else {
-        setIsPremium(data.subscribed ?? false);
-        setSubscriptionEnd(data.subscription_end ?? null);
+        setIsPremium(data?.subscribed ?? false);
+        setSubscriptionEnd(data?.subscription_end ?? null);
       }
     } catch (err) {
       console.error('Error checking subscription:', err);
@@ -46,16 +50,17 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [session]);
+  }, [session?.access_token]);
 
   useEffect(() => {
-    if (user) {
+    // Only check subscription when we have both user and a valid session with access token
+    if (user && session?.access_token) {
       checkSubscription();
-    } else {
+    } else if (!user) {
       setIsPremium(false);
       setLoading(false);
     }
-  }, [user, checkSubscription]);
+  }, [user, session?.access_token, checkSubscription]);
 
   // Check subscription periodically (every minute)
   useEffect(() => {

@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 const logStep = (step: string, details?: unknown) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : "";
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
@@ -20,14 +20,14 @@ serve(async (req) => {
   const supabaseClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-    { auth: { persistSession: false } }
+    { auth: { persistSession: false } },
   );
 
   try {
     logStep("Function started");
 
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
+    const stripeKey = Deno.env.get("STRIPE_PUBLISH_KEY");
+    if (!stripeKey) throw new Error("STRIPE_PUBLISH_KEY is not set");
     logStep("Stripe key verified");
 
     const authHeader = req.headers.get("Authorization");
@@ -36,7 +36,7 @@ serve(async (req) => {
 
     const token = authHeader.replace("Bearer ", "");
     logStep("Authenticating user with token");
-    
+
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError) throw new Error(`Authentication error: ${userError.message}`);
     const user = userData.user;
@@ -45,15 +45,12 @@ serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    
+
     if (customers.data.length === 0) {
       logStep("No customer found, user is not subscribed");
       // Update profile to not premium
-      await supabaseClient
-        .from('profiles')
-        .update({ is_premium: false })
-        .eq('user_id', user.id);
-      
+      await supabaseClient.from("profiles").update({ is_premium: false }).eq("user_id", user.id);
+
       return new Response(JSON.stringify({ subscribed: false }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
@@ -68,7 +65,7 @@ serve(async (req) => {
       status: "active",
       limit: 1,
     });
-    
+
     const hasActiveSub = subscriptions.data.length > 0;
     let subscriptionEnd = null;
 
@@ -82,23 +79,27 @@ serve(async (req) => {
 
     // Update profile premium status
     await supabaseClient
-      .from('profiles')
-      .update({ 
+      .from("profiles")
+      .update({
         is_premium: hasActiveSub,
-        stripe_customer_id: customerId
+        stripe_customer_id: customerId,
       })
-      .eq('user_id', user.id);
+      .eq("user_id", user.id);
 
-    return new Response(JSON.stringify({
-      subscribed: hasActiveSub,
-      subscription_end: subscriptionEnd
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+    return new Response(
+      JSON.stringify({
+        subscribed: hasActiveSub,
+        subscription_end: subscriptionEnd,
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      },
+    );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    const status = errorMessage.toLowerCase().includes("authorization") ||
+    const status =
+      errorMessage.toLowerCase().includes("authorization") ||
       errorMessage.toLowerCase().includes("authentication") ||
       errorMessage.toLowerCase().includes("jwt")
         ? 401

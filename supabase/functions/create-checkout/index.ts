@@ -8,17 +8,14 @@ const corsHeaders = {
 };
 
 // TODO: Replace with your actual Stripe price ID after creating the product in Stripe dashboard
-const PREMIUM_PRICE_ID = "price_premium_placeholder";
+const PREMIUM_PRICE_ID = "price_1Sl4vtB2d8rite6LLfj6qp90";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const supabaseClient = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_ANON_KEY") ?? ""
-  );
+  const supabaseClient = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_ANON_KEY") ?? "");
 
   try {
     const authHeader = req.headers.get("Authorization");

@@ -35,7 +35,7 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: "You are a creative social media caption enhancer for a cat-themed social platform. Your job is to take a simple caption and make it more engaging, fun, and cat-themed. Add relevant cat emojis (🐱😺🐾😸😻🙀) and make it playful. Keep it concise (under 280 characters). Don't use hashtags unless the original had them. Only respond with the enhanced caption, nothing else."
+            content: "You are a caption enhancer. Return ONLY the improved caption text - no explanations, no suggestions, no quotes, no prefixes like 'Here's...'. Just output the enhanced caption directly. Make it engaging with cat emojis (🐱😺🐾😸😻). Keep under 280 characters."
           },
           {
             role: "user",
